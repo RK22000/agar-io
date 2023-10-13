@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Thu Jul 20 19&colon;24&colon;51 PDT 2023</title>
+        <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="thu-jul-20-192451-pdt-2023">Thu Jul 20 19:24:51 PDT 2023</h1>
+<p>I created a directory to store all the bots and I have come up with a naming scheme that I feel will be helpful.</p>
+<blockquote>
+<p>architecture_greekLetter_digits.py</p>
+</blockquote>
+<p><code>cnn_alpha_0</code>: will be the simplest cnn model. I will take in a screenshot and spit out the mouse position in the next second.</p>
+<p><code>cnn_beta_0</code>: will take in screenshot and mouse position.</p>
+<p><code>cnn_gamma_0</code>: will take in screenshot, mouse position, and velocity.</p>
+<p>You get the idea. When I start mixing in reinforcement learning I'll name things like <code>tdq_alpha_0</code> and <code>tdq_beta_0</code> and <code>tdq_gamma_0</code> etc.</p>
+<hr>
+<blockquote>
+<p>endlog - Thu Jul 20 19:49:09 PDT 2023</p>
+</blockquote>
+<h2 id="thu-jul-20-150718-pdt-2023">Thu Jul 20 15:07:18 PDT 2023</h2>
+<h2 id="thoughts-on-the-first-cnn-bot">Thoughts on the first CNN bot</h2>
+<p>This bot is going to be an imitation learning bot. It learns as the player plays the game. Then the player lets the bot play by itself and watches to see how well the bot plays. I'd like for the player to see the bots ability even before the bot takes control.</p>
+<ul>
+<li>
+<p>While the bot it not playing it should project a dot to show where it would play if it was allowed to play.</p>
+</li>
+<li>
+<p>Also keep the first CNN bot simple no need to track mouse velocities and stuff.</p>
+</li>
+</ul>
+<hr>
+<blockquote>
+<p>endlog - Thu Jul 20 15:15:23 PDT 2023</p>
+</blockquote>
+<h2 id="tue-jul-18-071513-pdt-2023">Tue Jul 18 07:15:13 PDT 2023</h2>
+<p>I tried taking separation of responsibilities as far as I reasonably could. At the start of agario_bot.py <code>makeBot</code> holds the function to create a new bot on its run. Then there are 5 function that lead create the control flow of the program.</p>
+<pre><code class="language-md"><span class="hljs-code">          [Bot gets created]
+                 |
+                 V
+main() ==&gt;  startGame() ==&gt; pausablyPlayGame() &lt;==\
+                                \\         \\     \\
+                                 \\         \==&gt; pauseBot()
+                                  \\
+                                   \==&gt; playGame(stop_signal)
+</span></code></pre>
+<p>With this I think I have a decent environment to start messing with different kinds of models. For now I've made random_bot that moves the cursor randomly. I should make more bots following the template of <a href="random_bot.py">random_bot</a>.</p>
+<p>Also since the bot get created just before the game starts, the bot can create a thread and start observing the game on its own. Then when its called on to play it can play and know that any observations made while it is playing are actions taken by itself, while any observations made while it is not playing are actions taken by the player (ie. actions to be learned from).</p>
+<hr>
+<blockquote>
+<p>endlog - Tue Jul 18 07:34:37 PDT 2023</p>
+</blockquote>
+<h2 id="tue-jul-18-054238-pdt-2023">Tue Jul 18 05:42:38 PDT 2023</h2>
+<p>I think I just got pointers in python. If I want to keep track of a value I can assign a variable to hold that value. Then when the value changes I update that variable. If I use this variable to share the value with another variable, then update the original variable, the update is not reflected across to the other variable. I would like to use this ability with threads. I want one thread to be able to tell the other thread to stop.</p>
+<p>I just realized and tested with <a href="threadtest.py">threadtest.py</a> that if I assign an array to the variable and share the array with other variables then changes to the array are carried through.</p>
+<hr>
+<blockquote>
+<p>endlog - Tue Jul 18 05:47:51 PDT 2023</p>
+</blockquote>
+<h2 id="tue-jul-18-030952-pdt-2023">Tue Jul 18 03:09:52 PDT 2023</h2>
+<p>I asked chatgpt to help me make the python bot. With its guidance I created a new anaconda virtual environment on windows. (I used to do all my anaconda stuff on wsl). Anyways I got a simple bot running using pyautogui that plays randomly.</p>
+<p><img src="file:///d:\Projects\Agar.io\bot_play_0.gif" alt="random bot playing agario"></p>
+<p>I did have some trouble getting the <code>pyautogui.locate</code> function to work but it got resolved on updating pillow. Thanks <a href="https://stackoverflow.com/a/68523915/6878479">Stackoverflow</a></p>
+<hr>
+<blockquote>
+<p>endlog - Tue Jul 18 03:20:15 PDT 2023</p>
+</blockquote>
+<h2 id="thu-jul-13-162501-pdt-2023">Thu Jul 13 16:25:01 PDT 2023</h2>
+<p>Ok here's an idea. This will definately generate data of the mouse being controlled by a program and the mouse being controlled by a human.</p>
+<p>There is an avanue for cybersecurity research here. Specifically in biometric identity. How good can the program emulate the biometric identiy of the person. Could a biometric mask be developed to put on the program's control of the mouse.</p>
+<hr>
+<blockquote>
+<p>endlog - Thu Jul 13 16:30:41 PDT 2023</p>
+</blockquote>
+<h2 id="thu-jul-13-140055-pdt-2023">Thu Jul 13 14:00:55 PDT 2023</h2>
+<p><a href="http://Agar.io">Agar.io</a> is a fun and addicting multiplayer online game with a simple enough rule and control set that I want to try and train a model to play it. More specifically I want to try and develop an approach where humans can guide the model on it path to learning the game the way a human would guide another.</p>
+<p><img src="file:///d:\Projects\Agar.io\agar-io2.jpg" alt="Agar io game"></p>
+<p>Here's the basic <a href="https://www.wikihow.com/Play-Agar.io">wikihow</a></p>
+<p>The approach I'm thinking of is to is to have a program running the controls when the player is passive. The player will be watching as the program plays and will be free to intervene and play themselves. When they do the program will sit back, watch, and learn from the players game play.</p>
+<p>Here are a few bullet points I'd like to see in this project</p>
+<ul>
+<li>A way to see why the program makes certain decision based on the visible game state</li>
+<li>A way to see how confident the program is with each decision it makes</li>
+<li>A way to tell the program it did something really well just right now</li>
+<li>A way to tell the program it did something terrible just right now</li>
+</ul>
+<hr>
+<p>Here's an idea. I really like the idea of activating the drop out layers even in prediction so that confidence can be determined by how similar the outputs from each slightly different dropped out neural network is. I want to try to use this as an approach to train simpler neural networks as RL agents.</p>
+<blockquote>
+<p>If an action proves to be good reinforce by training multiple dropout variations for the same action</p>
+<p>If an action proves to be bad reinforce by training multiple dropout variation against the same action</p>
+</blockquote>
+<p>This idea is based on speculation so read the original paper before sinking effort into this</p>
+<hr>
+<h2 id="starting-point">Starting point</h2>
+<p><code>pyautogui</code> looks like a decent starting point. According to ChatGPT it &quot;is a Python library that provides cross-platform support for controlling the mouse and keyboard. It allows you to automate GUI interactions, such as moving the mouse, clicking, scrolling, and typing&quot;. I should check out its <a href="https://pyautogui.readthedocs.io/en/latest/">Documentation</a></p>
+<p>Remember what Jeremy Howard said. When it comes to AI models start with a really stupid simple model and build up from there. Don't get vexed by trying to make things perfect with the library, and neural networks.</p>
+<p>The simplest model I can think of right now is a model that does not even look at the screen but just randomly puts inputs. Maybe start from there. Just get the peripherals to work so that the program is able to input some controls when the user is passive and relinquish controls when the user is active.</p>
+<hr>
+<blockquote>
+<p>endlog - Thu Jul 13 14:56:25 PDT 2023</p>
+</blockquote>
+
+        
+        
+    </body>
+    </html>
