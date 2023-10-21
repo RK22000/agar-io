@@ -213,7 +213,6 @@ dependencies:
   - zstd=1.5.5=hc292b87_0
   - pip:
       - evdev==1.6.1
-      - mouse==0.7.1
       - pygetwindow==0.0.9
       - pynput==1.7.6
       - pyrect==0.2.0

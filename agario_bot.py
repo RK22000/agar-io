@@ -4,8 +4,7 @@ import time
 from pymsgbox import *
 from bots import RandomBot, DatasetMaker
 from enum import Enum
-import mouse
-from pynput import keyboard
+from pynput import keyboard, mouse
 
 
 class STATE(Enum):
@@ -30,6 +29,7 @@ class GameSession:
         self.do_bot_play = False
         self.region = window_pos
         self.width, self.height = pyautogui.size() if window_pos is None else window_pos[2:] - window_pos[:2]
+        self.mouse_ct = mouse.Controller()
         # RL stuff
         self.episode_id = None
         self.step_idx = None
@@ -77,7 +77,7 @@ class GameSession:
                     self.state = STATE.READY
 
             elif self.state == STATE.READY:
-                mode = confirm(text='Choose mode', buttons=['Record Human', 'Record Bot', 'Test Bot', 'Terminate'])
+                mode = confirm(text='Choose mode', buttons=['Start Manual Control', 'Start Bot Control', 'Terminate'])
                 # double-check that we still have the agario window
                 agario_start_button_pos = self.find_start_buttons()
                 if agario_start_button_pos is None:
@@ -85,22 +85,17 @@ class GameSession:
                     self.state = STATE.INIT
                 if mode == 'Terminate':
                     self.state = STATE.TERMINATE
-                elif mode == 'Record Bot':
+                elif mode == 'Start Bot Control':
                     pyautogui.moveTo(*agario_start_button_pos)
                     pyautogui.leftClick()
                     self.state = STATE.PLAYING
                     self.recorderBot.reset_episode()
                     self.do_record = True
                     self.do_bot_play = True
-                elif mode == 'Record Human':
+                elif mode == 'Start Manual Control':
                     self.state = STATE.PLAYING
                     self.recorderBot.reset_episode()
                     self.do_record = True
-                elif mode == 'Test Bot':
-                    pyautogui.moveTo(*agario_start_button_pos)
-                    pyautogui.leftClick()
-                    self.state = STATE.PLAYING
-                    self.do_bot_play = True
 
             elif self.state == STATE.PAUSED:
                 mode = confirm(text='Choose mode', buttons=['Resume', 'Terminate'])
@@ -122,7 +117,7 @@ class GameSession:
                     abs_pos = (action_[0] * self.width, action_[1] * self.height)
                     pyautogui.moveTo(abs_pos[0], abs_pos[1], duration=self.mouse_delay)
                 else:
-                    abs_pos = mouse.get_position()
+                    abs_pos = self.mouse_ct.position
                     action = np.array((abs_pos[0] / self.width, abs_pos[1] / self.height))
                 # check if we were killed
                 done = pyautogui.locateCenterOnScreen("gamover.png") is not None
