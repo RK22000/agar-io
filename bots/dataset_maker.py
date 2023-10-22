@@ -34,12 +34,12 @@ class DatasetMaker:
         self.ep_timestamps = self.ep_timestamps[:self.step_idx]
         np.savez(os.path.join(self.root, f"{self.episode_id}.npz"), actions=self.ep_actions, rewards=self.ep_rewards, timestamps=self.ep_timestamps)
 
-    def add_step(self, action, reward, done, tmp_img_name='tmp.png'):
+    def add_step(self, img, action, reward, done):
         self.ep_actions[self.step_idx] = action
         self.ep_rewards[self.step_idx] = reward
         self.ep_timestamps[self.step_idx] = time.time()
-        new_name = f"{self.episode_id}_{self.step_idx}.png"
-        os.rename(tmp_img_name, os.path.join(self.root, new_name))
+        img_name = f"{self.episode_id}_{self.step_idx}.png"
+        img.save(os.path.join(self.root, img_name))
         if done:
             self.save_episode()
             self.reset_episode()

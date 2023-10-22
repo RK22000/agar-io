@@ -104,7 +104,7 @@ class GameSession:
                 reward = 0
                 start = time.time()
                 tmp_img_name = "tmp.png"
-                img = pyautogui.screenshot(tmp_img_name, region=self.region)
+                img = pyautogui.screenshot(region=self.region)
                 img = img.resize((224,224))
                 # notify bot of the latest state
                 self.bot(img)
@@ -118,7 +118,7 @@ class GameSession:
                 time.sleep(self.dt - step_delay) if step_delay < self.dt else None
                 action = self.bot_action
                 # record the last step
-                self.recorderBot.add_step(action, reward=reward, done=done, tmp_img_name=tmp_img_name)
+                self.recorderBot.add_step(img, action, reward=reward, done=done)
 
 
 if __name__=='__main__':
