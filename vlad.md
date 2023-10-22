@@ -1,4 +1,18 @@
-# Fri Oct 20 10:25:24 PM PDT 2023
+# Sat Oct 21 10:57:07 PM PDT 2023
+
+There is a nice utilize for getting the agario windows and mac - `pygetwindow`.
+It doesn't work no linux. Unfortunately, ubuntu is not as cooperative in window management.
+GPT4 recommended using a 3rd party window utility libraries and interfacing with those through
+the subprocess terminal. This will work as a termporary hack, but would be nice to have a solution that doesn't require you to install extra soft.
+
+Decided to use `wmctrl` for now.
+
+Thinking that at the moment the only thing that needs to happen in a thread is bot action. The data collection can then remain in the main thread. 
+
+---
+> endlog - Sat Oct 21 11:19:11 PM PDT 2023
+
+## Fri Oct 20 10:25:24 PM PDT 2023
 
 Possible problems with recording and playing bot:
  * the dt should be consistent between the recorder and player bot. This will be harder for different bots where more/less time is needed for a forward pass. How do we 1. guarantee that the player_bot is on time, 2. the recorded action-state touples are consitent with player?

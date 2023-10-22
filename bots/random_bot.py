@@ -1,6 +1,8 @@
 import numpy
 
+from .Bot import Bot
 
-class RandomBot:
-    def __call__(self, x):
+
+class RandomBot(Bot):
+    def act(self, state):
         return numpy.random.random(2) - 0.5
