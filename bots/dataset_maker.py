@@ -22,7 +22,7 @@ class DatasetMaker:
         print("resetting episode")
         self.episode_id = rnd.randint(0, int(2 ** 32))
         self.step_idx = 0
-        self.ep_actions = np.zeros((512, 2))
+        self.ep_actions = np.zeros((512, 3))
         self.ep_rewards = np.zeros(512)
         self.ep_timestamps = np.zeros(512)
 

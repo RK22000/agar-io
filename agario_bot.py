@@ -38,12 +38,15 @@ class GameSession:
         self.dt = dt
         # Bot actions. Bot will periodically update these from its thread
         # then the main loop will execute them
-        self.bot_action = np.random.random(2)
+        self.bot_action = np.random.random(3)
         self.bot_action_time = 0
+        # keyboard actions
+        self.kb_action = np.zeros(1)  # only one key - space
 
     def terminate(self):
         print('terminating')
         self.state = STATE.TERMINATE
+        self.recorderBot.save_episode()
 
     def find_start_buttons(self):
         for bt_im in ["play_bt_smol.png", "play_button.png"]:
@@ -56,7 +59,6 @@ class GameSession:
         self.bot_action_time = time.time()
         if self.do_bot_play:
             action = self.bot_action
-            print(f"action {action}, on time {(time.time() - self.bot_action_time) < self.dt}")
             action_ = action + 0.5
             abs_pos = (action_[0] * self.width + self.region[0], action_[1] * self.height + self.region[1])
             pyautogui.moveTo(abs_pos[0], abs_pos[1], duration=self.mouse_delay)
@@ -64,11 +66,8 @@ class GameSession:
     def main(self):
         # handle keyboard inputs
         def on_press(key):
-            # pause
-            if key == keyboard.Key.space:
-                self.toggle_pause()
             # terminate
-            elif key == keyboard.Key.esc:
+            if key == keyboard.Key.esc:
                 self.terminate()
         listener = keyboard.Listener(on_press=on_press,)
         listener.start()
@@ -103,22 +102,26 @@ class GameSession:
             elif self.state == STATE.PLAYING:
                 reward = 0
                 start = time.time()
-                tmp_img_name = "tmp.png"
                 img = pyautogui.screenshot(region=self.region)
                 img = img.resize((224,224))
                 # notify bot of the latest state
                 self.bot(img)
                 # check if we were killed
-                done = pyautogui.locateCenterOnScreen("gamover.png") is not None
+                done = pyautogui.locateCenterOnScreen("gamover.png", confidence=0.5) is not None
                 # TODO: add reward parsing from the last tmp image
                 if done:
                     self.state = STATE.INIT
                 step_delay = time.time() - start
                 # Wait for the rest of the dt
                 time.sleep(self.dt - step_delay) if step_delay < self.dt else None
-                action = self.bot_action
+                if self.do_bot_play:
+                    action = self.bot_action
+                else:
+                    mouse_pos = self.mouse_ct.position
+                    action = np.array([mouse_pos[0] / self.width, mouse_pos[1] / self.height, self.kb_action[0]])
                 # record the last step
-                self.recorderBot.add_step(img, action, reward=reward, done=done)
+                if not self.state == STATE.TERMINATE:
+                    self.recorderBot.add_step(img, action, reward=reward, done=done)
 
 
 if __name__=='__main__':
