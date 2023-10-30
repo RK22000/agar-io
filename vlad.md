@@ -1,4 +1,11 @@
-# Sat Oct 21 10:57:07 PM PDT 2023
+# Sun Oct 29 07:16:29 PM PDT 2023
+
+Trying to use pytesseract for text detection. It often fails by either missing one of the digits in food eaten, or confuses 0 for 9 in cells eaten.
+
+---
+> endlog - Sun Oct 29 07:22:21 PM PDT 2023
+
+## Sat Oct 21 10:57:07 PM PDT 2023
 
 There is a nice utilize for getting the agario windows and mac - `pygetwindow`.
 It doesn't work no linux. Unfortunately, ubuntu is not as cooperative in window management.
