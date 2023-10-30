@@ -1,3 +1,6 @@
+import os
+
+import cv2
 import numpy as np
 import pyautogui
 import time
@@ -5,6 +8,8 @@ from pymsgbox import *
 from bots import RandomBot, DatasetMaker
 from enum import Enum
 from pynput import keyboard, mouse
+import pytesseract
+
 from window_utils import find_agario
 
 
@@ -13,6 +18,19 @@ class STATE(Enum):
     PLAYING = 1
     TERMINATE = 2
     READY = 3
+
+
+def parse_score(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    bw = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)[1]
+    text = pytesseract.image_to_string(bw)
+    start = text.find('food eaten highest mass')
+    text_s = text[start:].split('\n')
+    food_eaten = float(text_s[1].split(' ')[0])
+    start = text.find('cells eaten top position')
+    text_s = text[start:].split('\n')
+    cells_eaten = float(text_s[1].split(' ')[0])
+    return food_eaten, cells_eaten
 
 
 class GameSession:
@@ -91,6 +109,7 @@ class GameSession:
                     self.state = STATE.TERMINATE
                 elif mode == 'Start Bot Control':
                     pyautogui.moveTo(*agario_start_button_pos)
+                    time.sleep(1.0)
                     pyautogui.leftClick()
                     self.state = STATE.PLAYING
                     self.recorderBot.reset_episode()
@@ -108,9 +127,34 @@ class GameSession:
                 self.bot(img)
                 # check if we were killed
                 done = pyautogui.locateCenterOnScreen("gamover.png", confidence=0.5) is not None
-                # TODO: add reward parsing from the last tmp image
                 if done:
                     self.state = STATE.INIT
+                    # parse the score, attempt 10 times
+                    sfood, scells = 0, 0
+                    for i in range(100):
+                        try:
+                            # random center crop
+                            crop_size = int(min(self.region[2], self.region[3]) * 0.2)
+                            region = (
+                                self.region[0] + np.random.randint(0, crop_size),
+                                self.region[1] + np.random.randint(0, crop_size),
+                                self.region[2]-crop_size, self.region[3]-crop_size
+                            )
+                            pyautogui.screenshot('tmp.png', region=region)
+                            sfood, scells = parse_score(cv2.imread('tmp.png'))
+                            # 0 cells eaten is often confused with 9, so assume its 0
+                            if scells == 9:
+                                scells = 0
+                            print("score parsed")
+                            break
+                        except Exception as e:
+                            print(e)
+                            continue
+                        finally:
+                            os.remove('tmp.png')
+                    print(f"score: {sfood} food eaten, {scells} cells eaten")
+                    reward = sfood + scells
+
                 step_delay = time.time() - start
                 # Wait for the rest of the dt
                 time.sleep(self.dt - step_delay) if step_delay < self.dt else None
@@ -125,6 +169,7 @@ class GameSession:
 
 
 if __name__=='__main__':
+    os.environ['TESSDATA_PREFIX'] = os.curdir
     window_info = find_agario()
     window_pos = (max(window_info['x']//2, 0), max(window_info['y'], 0), window_info['width'], window_info['height'])
     game = GameSession(RandomBot(), DatasetMaker(), dt=1/30, window_pos=window_pos)
