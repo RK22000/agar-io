@@ -2,3 +2,4 @@ dataset/
 media/
 *__pycache__/
 agarIO-env/
+env/
