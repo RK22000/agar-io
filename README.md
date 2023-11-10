@@ -5,4 +5,3 @@ I'm looking to apply this [paper](https://arxiv.org/abs/1704.05588) to a bot tha
 ## Step 1, Build the dataset
 
 - Create a script that plays Agar io by moving in a straight line.
-
