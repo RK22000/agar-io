@@ -81,12 +81,20 @@ class GameSession:
             abs_pos = (action_[0] * self.width + self.region[0], action_[1] * self.height + self.region[1])
             pyautogui.moveTo(abs_pos[0], abs_pos[1], duration=self.mouse_delay)
 
+    def toggle_bot_play(self):
+        self.do_bot_play = not self.do_bot_play
+        print(f"bot play: {self.do_bot_play}")
+
     def main(self):
         # handle keyboard inputs
         def on_press(key):
             # terminate
             if key == keyboard.Key.esc:
                 self.terminate()
+            if key == keyboard.Key.space:
+                self.kb_action[0] = 1
+            if key == keyboard.Key.shift_l:
+                self.toggle_bot_play()
         listener = keyboard.Listener(on_press=on_press,)
         listener.start()
         while self.state != STATE.TERMINATE:
