@@ -5,7 +5,7 @@
 ### Linux
 Setup conda: `conda env create -f environment.yml`
  
-Dependencies: `sudo apt-get install wmctrl scrot`
+Dependencies: `sudo apt-get install scrot`
 
 Download [eng.traineddata](https://github.com/tesseract-ocr/tessdata/blob/main/eng.traineddata) to the root folder: `wget https://github.com/tesseract-ocr/tessdata/blob/main/eng.traineddata`
 

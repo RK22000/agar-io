@@ -68,7 +68,7 @@ class GameSession:
 
     def find_start_buttons(self):
         for bt_im in ["play_bt_smol.png", "play_button.png"]:
-            pos = pyautogui.locateCenterOnScreen(bt_im, confidence=0.5, region=self.region)
+            pos = pyautogui.locateCenterOnScreen(bt_im, confidence=0.7, region=self.region)
             if pos is not None:
                 return pos
 
