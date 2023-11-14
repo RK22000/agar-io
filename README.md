@@ -18,3 +18,10 @@ You can start in bot control mode of manual control.
 Bot control will attempt to find the star button and start the game.
 Press escape to stop the recording.
 Press shift to switch from bot to manual control.
+
+## Todos
+
+- [ ] Convert agario into a gym environmnet
+- [ ] Train a sb3 RL agent
+- [ ] Train offline without the need to run the game
+- [ ] Use a programmatic browser interface instead of OCR

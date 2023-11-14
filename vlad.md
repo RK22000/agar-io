@@ -1,4 +1,24 @@
-# Sun Oct 29 07:16:29 PM PDT 2023
+# Mon Nov 13 11:01:17 PM PST 2023
+
+New data colletion challenge: `pyautogui.screenshot` takes an average of 0.25 sec and `pyautogui.locateCenterOnScreen` takes 0.31 sec.
+
+---
+> endlog - Mon Nov 13 11:03:09 PM PST 2023
+
+## Mon Nov 13 10:39:49 PM PST 2023
+
+I want to enable standard training with stable baselines because it is nice to have our environmnet compatible with common RL and other algorithms. On the other hand, [it is known](https://benjaminwarner.dev/2022/08/31/training-atari-agents-faster) that sb3 is not very efficient with their buffers. Specifically, they pass data from gpu to cpu and back alot. In addition, at the moment of this log, their vectorized environment sampling is broken.
+
+Regardless of sb3, having a gym interface is still useful, though additional research into how to do it right with realtime environments would be useful. [rtgym](https://pypi.org/project/rtgym/) is one option that we could use to build on top of.
+
+Picking between synchronous vs asynchronous action taking question becomes harder in this case, because the `__call__` has to return something. If we want the action to be associated with the passed observation, it has to be blocking. This potentially slows us down, as the asynchronous version could otherwise pipeline actions.
+
+gymmifying the interace will also enalbe us to sample from multilpe environmnets concurrently in the future. One challenge with this will be enabeling multiple mouse position inputs. Hoping that selenium driver enables multiple concurrent session interactions with a mouse.
+
+---
+> endlog - Mon Nov 13 10:53:08 PM PST 2023
+
+## Sun Oct 29 07:16:29 PM PDT 2023
 
 Trying to use pytesseract for text detection. It often fails by either missing one of the digits in food eaten, or confuses 0 for 9 in cells eaten.
 
