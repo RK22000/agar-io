@@ -21,7 +21,11 @@ Press shift to switch from bot to manual control.
 
 ## Todos
 
-- [ ] Convert agario into a gym environmnet
+- [x] Convert agario into a gym environmnet
 - [ ] Train a sb3 RL agent
 - [ ] Train offline without the need to run the game
 - [ ] Use a programmatic browser interface instead of OCR
+- [ ] Capture the correct window rectangle
+- [ ] Speedup the screenshot capture
+- [ ] Fix death detection
+- [ ] Add reward on score change
