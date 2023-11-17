@@ -4,6 +4,8 @@ import numpy as np
 import os
 import random as rnd
 
+from PIL import Image
+
 
 class DatasetMaker:
     def __init__(self, root="dataset", max_ep_len=512, use_max_ep_len=True) -> None:
@@ -39,6 +41,7 @@ class DatasetMaker:
         self.ep_rewards[self.step_idx] = reward
         self.ep_timestamps[self.step_idx] = time.time()
         img_name = f"{self.episode_id}_{self.step_idx}.png"
+        img = Image.fromarray(img)
         img.save(os.path.join(self.root, img_name))
         if done:
             self.save_episode()

@@ -22,13 +22,13 @@ Press shift to switch from bot to manual control.
 ## Todos
 
 - [x] Convert agario into a gym environmnet
-- [ ] Train a sb3 RL agent
+- [x] Train a sb3 RL agent
 - [ ] Train offline
 - [ ] Use a programmatic browser interface instead of OCR
 - [x] Capture the correct window rectangle
 - [x] Speedup the screenshot capture
 - [x] Fix death detection
-- [ ] Automatic episode restart
+- [x] Automatic episode restart
 - [ ] Add reward on score change
 - [ ] Reliable end of game reward parsing
 - [ ] Learn by crashing implementation

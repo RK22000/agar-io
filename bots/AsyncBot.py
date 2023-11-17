@@ -1,5 +1,5 @@
 import time
-from gymnasium.spaces import Space
+from gym.spaces import Space
 import numpy
 import threading
 

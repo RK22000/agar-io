@@ -11,9 +11,10 @@ from bots import RandomAsyncBot, RandomSyncBot, DatasetMaker
 from enum import Enum
 from pynput import keyboard, mouse
 import pytesseract
-import gymnasium as gym
+import gym
 import webbrowser
 from mss import mss
+from stable_baselines3 import PPO
 
 from window_utils import find_agario
 
@@ -33,7 +34,6 @@ def parse_score(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     bw = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)[1]
     text = pytesseract.image_to_string(bw)
-    print(text)
     start = text.find('food eaten highest mass')
     text_s = text[start:].split('\n')
     food_eaten = float(text_s[1].split(' ')[0])
@@ -104,6 +104,8 @@ class Agarioenv(gym.core.Env):
                 self.bot_action[2] = 1.0
             if key == keyboard.Key.shift_l:
                 self.toggle_bot_play()
+            if key == keyboard.Key.f1:
+                self.kill()
         self.listener = keyboard.Listener(on_press=on_press, )
         self.listener.start()
         self.sct = mss()
@@ -115,6 +117,10 @@ class Agarioenv(gym.core.Env):
     def terminate(self):
         print('terminating')
         self.state = STATE.TERMINATE
+
+    def kill(self):
+        print('killing')
+        sys.exit(0)
 
     def find_start_buttons(self, absolute=False):
         sct_img = self.sct.grab(self.reg)
@@ -136,7 +142,7 @@ class Agarioenv(gym.core.Env):
         self.do_bot_play = not self.do_bot_play
         print(f"bot play: {self.do_bot_play}")
 
-    def reset(self, manual=False):
+    def reset(self, manual=False, seed=None, options=None):
         while not self.state == STATE.PLAYING and not self.state == STATE.TERMINATE:
             print(self.state)
             if self.state == STATE.INIT:
@@ -185,7 +191,7 @@ class Agarioenv(gym.core.Env):
         # reset the realtime clock
         self.clock = time.time()
         self.step_idx = 0
-        return self.step(self.action_space.sample())[0]
+        return self.step(self.action_space.sample())[0], None
 
     def step(self, action):
         self.notify_bot_action(action)
@@ -229,21 +235,21 @@ class Agarioenv(gym.core.Env):
             print(f"score: {sfood} food eaten, {scells} cells eaten")
             reward = sfood + scells
         self.step_idx += 1
-        return img, reward, done, None, None
+        return np.array(img), reward, done, None, dict()
 
     def main(self, bot, recorderBot):
         while self.state != STATE.TERMINATE:
             if self.state == STATE.PLAYING:
                 action = bot(np.array(obs)[:, :, :-1])
-                obs, rew, term, trun, _ = self.step(action)
+                obs, rew, done, _, _ = self.step(action)
                 if self.do_bot_play:
                     action = self.bot_action
                 else:
                     mouse_pos = self.mouse_ct.position
                     action = np.array([mouse_pos[0] / self.reg['width'], mouse_pos[1] / self.reg['height'], self.kb_action[0]])
-                recorderBot.add_step(obs, action, reward=rew, done=term)
+                recorderBot.add_step(obs, action, reward=rew, done=done)
             elif self.state == STATE.INIT or self.state == STATE.RESTART:
-                obs = self.reset(manual=True)
+                obs, _ = self.reset(manual=True)
                 recorderBot.reset_episode()
 
         recorderBot.save_episode()
@@ -252,5 +258,9 @@ class Agarioenv(gym.core.Env):
 if __name__=='__main__':
     os.environ['TESSDATA_PREFIX'] = os.curdir
     game = Agarioenv(dt=1/30)
-    bot, ds = RandomSyncBot(), DatasetMaker()
+    bot = RandomSyncBot()
+    # bot = PPO('CnnPolicy', game, verbose=1, device='cuda')
+    # m = bot.learn(1000)
+    # m.save('ppo_agario')
+    ds = DatasetMaker()
     game.main(bot, ds)
