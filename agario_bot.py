@@ -26,6 +26,9 @@ class STATE(Enum):
     RESTART = 4
 
 
+REL_CONT_POS = (0.4757167934464599, 0.41476091476091476)
+
+
 def parse_score(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     bw = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)[1]
@@ -40,7 +43,7 @@ def parse_score(image):
     return food_eaten, cells_eaten
 
 
-def find_img(img, target, reg=None, absolute=False, threshold=.5):
+def find_img(img, target, reg=None, absolute=False, threshold=.6):
     res = cv2.matchTemplate(img, target, cv2.TM_CCOEFF_NORMED)
     loc = np.where(res >= threshold)
     if len(loc[0]) > 0:
@@ -134,16 +137,16 @@ class Agarioenv(gym.core.Env):
         print(f"bot play: {self.do_bot_play}")
 
     def reset(self, manual=False):
-        self.state = STATE.INIT
-        while not self.state == STATE.PLAYING:
+        while not self.state == STATE.PLAYING and not self.state == STATE.TERMINATE:
+            print(self.state)
             if self.state == STATE.INIT:
                 agario_start_button_pos = self.find_start_buttons(absolute=True)
                 if agario_start_button_pos is None:
-                    alert("Looking for the play button...", timeout=100)
+                    time.sleep(0.1)
                     # maybe blocked by a popup?
                     sct_img = self.sct.grab(self.reg)
                     img_rgb = np.array(sct_img)[:, :, :-1]
-                    xy = find_img(img_rgb, self.popupsolution, self.reg, absolute=True)
+                    xy = find_img(img_rgb, self.popupsolution, self.reg, absolute=True, threshold=0.9)
                     if xy is not None:
                         print("found popup, closing it")
                         pyautogui.moveTo(*xy)
@@ -152,15 +155,13 @@ class Agarioenv(gym.core.Env):
                     self.state = STATE.READY
             elif self.state == STATE.RESTART:
                 # find the continue button
-                sct_img = self.sct.grab(self.reg)
-                img_rgb = np.array(sct_img)[:, :, :-1]
-                xy = find_img(img_rgb, self.contbt, self.reg, absolute=True)
-                if xy is None:
-                    alert("Looking for the continue button...", timeout=100)
-                else:
-                    pyautogui.moveTo(*xy)
-                    pyautogui.leftClick()
-                    self.state = STATE.INIT
+                # sct_img = self.sct.grab(self.reg)
+                # img_rgb = np.array(sct_img)[:, :, :-1]
+                pyautogui.moveTo(REL_CONT_POS[0] * self.reg['width'] + self.reg['left'], self.reg['top'] + self.reg['height'] * REL_CONT_POS[1])
+                time.sleep(1.0)
+                print("clicking continue")
+                pyautogui.leftClick()
+                self.state = STATE.INIT
             elif self.state == STATE.READY:
                 if manual:
                     mode = confirm(text='Choose mode', buttons=['Start Manual Control', 'Start Bot Control', 'Terminate'])
@@ -208,18 +209,21 @@ class Agarioenv(gym.core.Env):
             self.state = STATE.RESTART
             # parse the score, attempt 10 times
             sfood, scells = 0, 0
+            # wait for the gameover screen to fully load
+            time.sleep(1.0)
             for i in range(100):
                 try:
-                    xmargin = int(self.rec['width'] // 2.5)
-                    ymargin = self.rec['height'] // 8
+                    xmargin = int(self.reg['width'] // 2.5)
+                    ymargin = self.reg['height'] // 8
                     _bb = {
-                        'top': self.rec['top'] + ymargin,
-                        'left': self.rec['left'] + xmargin,
-                        'width': self.rec['width'] - 2 * xmargin,
-                        'height': self.rec['height'] - 4 * ymargin,
+                        'top': self.reg['top'] + ymargin,
+                        'left': self.reg['left'] + xmargin,
+                        'width': self.reg['width'] - 2 * xmargin,
+                        'height': self.reg['height'] - 4 * ymargin,
                     }
                     cropped_img = self.sct.grab(_bb)
                     sfood, scells = parse_score(np.array(cropped_img)[:, :, :-1])
+                    break
                 except Exception as e:
                     print(e)
             print(f"score: {sfood} food eaten, {scells} cells eaten")
@@ -229,11 +233,7 @@ class Agarioenv(gym.core.Env):
 
     def main(self, bot, recorderBot):
         while self.state != STATE.TERMINATE:
-            if self.state == STATE.INIT or self.state == STATE.RESTART:
-                obs = self.reset(manual=True)
-                recorderBot.reset_episode()
-
-            elif self.state == STATE.PLAYING:
+            if self.state == STATE.PLAYING:
                 action = bot(np.array(obs)[:, :, :-1])
                 obs, rew, term, trun, _ = self.step(action)
                 if self.do_bot_play:
@@ -242,6 +242,10 @@ class Agarioenv(gym.core.Env):
                     mouse_pos = self.mouse_ct.position
                     action = np.array([mouse_pos[0] / self.reg['width'], mouse_pos[1] / self.reg['height'], self.kb_action[0]])
                 recorderBot.add_step(obs, action, reward=rew, done=term)
+            elif self.state == STATE.INIT or self.state == STATE.RESTART:
+                obs = self.reset(manual=True)
+                recorderBot.reset_episode()
+
         recorderBot.save_episode()
 
 
