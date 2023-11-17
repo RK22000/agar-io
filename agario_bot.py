@@ -4,6 +4,8 @@ import cv2
 import numpy as np
 import pyautogui
 import time
+
+from PIL import Image
 from pymsgbox import *
 from bots import RandomAsyncBot, RandomSyncBot, DatasetMaker
 from enum import Enum
@@ -11,6 +13,7 @@ from pynput import keyboard, mouse
 import pytesseract
 import gymnasium as gym
 import webbrowser
+from mss import mss
 
 from window_utils import find_agario
 
@@ -37,7 +40,7 @@ def parse_score(image):
 
 class Agarioenv(gym.core.Env):
     AGARIO_URL = 'https://agar.io/'
-    def __init__(self, mouse_delay=0.1, dt=0.03) -> None:
+    def __init__(self, dt=0.03) -> None:
         """
         Interactive game session to record and play agario using a bot or manually
         :param bot:
@@ -59,21 +62,14 @@ class Agarioenv(gym.core.Env):
                     print('failed to find agario window')
                     time.sleep(1)
         print(window_info)
-        window_pos = (
-            max(window_info['x'] // 2, 0),
-            max(window_info['y'], 0),
-            window_info['width'],
-            window_info['height']
-        )
         self.state = STATE.INIT
         self.do_bot_play = False
-        self.region = window_pos
-        self.width, self.height = window_pos[2:]
+        self.reg = window_info
+        self.regarr = np.array([window_info['left'], window_info['top'], window_info['width'], window_info['height']])
         self.mouse_ct = mouse.Controller()
         # RL stuff
         self.episode_id = None
         self.step_idx = None
-        self.mouse_delay = mouse_delay
         self.dt = dt
         self.clock = time.time()
         self.action_space = gym.spaces.Box(low=0, high=1, shape=(3,), dtype=np.float32)
@@ -95,26 +91,36 @@ class Agarioenv(gym.core.Env):
                 self.toggle_bot_play()
         self.listener = keyboard.Listener(on_press=on_press, )
         self.listener.start()
+        self.sct = mss()
+        self.playbt = cv2.imread('play_bt_smol.png')
+        self.gmover = cv2.imread('gameover.png')
 
     def terminate(self):
         print('terminating')
         self.state = STATE.TERMINATE
 
-    def find_start_buttons(self):
-        for bt_im in ["play_bt_smol.png", "play_button.png"]:
-            pos = pyautogui.locateCenterOnScreen(bt_im, confidence=0.6, region=self.region)
-            if pos is not None:
-                return pos
+    def find_start_buttons(self, absolute=False):
+        sct_img = self.sct.grab(self.reg)
+        img_rgb = np.array(sct_img)[:, :, :-1]
+        return self.find_img(img_rgb, self.playbt, absolute=absolute)
+
+    def find_img(self, img, target, absolute=False, threshold=.5):
+        res = cv2.matchTemplate(img, target, cv2.TM_CCOEFF_NORMED)
+        loc = np.where(res >= threshold)
+        if len(loc[0]) > 0:
+            if absolute:
+                return loc[1][0] + self.reg['left'], loc[0][0] + self.reg['top']
+            else:
+                return loc[1][0], loc[0][0]
 
     def notify_bot_action(self, x):
         self.bot_action = x
         self.bot_action_time = time.time()
         if self.do_bot_play:
-            action = self.bot_action
-            action_ = action + 0.5
-            abs_pos = (action_[0] * self.width + self.region[0], action_[1] * self.height + self.region[1])
-            pyautogui.moveTo(abs_pos[0], abs_pos[1], duration=self.mouse_delay)
-            if action[2] > 0.9:
+            action_ = self.bot_action
+            abs_pos = (action_[0] * self.reg['width'] + self.reg['left'], action_[1] * self.reg['height'] + self.reg['top'])
+            pyautogui.moveTo(abs_pos[0], abs_pos[1])
+            if action_[2] > 0.9:
                 pyautogui.keyDown('space')
                 pyautogui.keyUp('space')
 
@@ -126,9 +132,9 @@ class Agarioenv(gym.core.Env):
         self.state = STATE.INIT
         while not self.state == STATE.PLAYING:
             if self.state == STATE.INIT:
-                agario_start_button_pos = self.find_start_buttons()
+                agario_start_button_pos = self.find_start_buttons(absolute=True)
                 if agario_start_button_pos is None:
-                    alert("Looking for the play button...", timeout=1000)
+                    alert("Looking for the play button...", timeout=100)
                 else:
                     self.state = STATE.READY
             elif self.state == STATE.READY:
@@ -137,7 +143,7 @@ class Agarioenv(gym.core.Env):
                 else:
                     mode = 'Start Bot Control'
                 # double-check that we still have the agario window
-                agario_start_button_pos = self.find_start_buttons()
+                agario_start_button_pos = self.find_start_buttons(absolute=True)
                 if agario_start_button_pos is None:
                     alert("lost agario :<", timeout=1000)
                     self.state = STATE.INIT
@@ -145,31 +151,35 @@ class Agarioenv(gym.core.Env):
                     self.state = STATE.TERMINATE
                 elif mode == 'Start Bot Control':
                     pyautogui.moveTo(*agario_start_button_pos)
-                    time.sleep(1.0)
                     pyautogui.leftClick()
                     self.state = STATE.PLAYING
                     self.do_bot_play = True
+                    time.sleep(2.0)
                 elif mode == 'Start Manual Control':
                     self.state = STATE.PLAYING
         # reset the realtime clock
         self.clock = time.time()
+        self.step_idx = 0
+        return self.step(self.action_space.sample())[0]
 
     def step(self, action):
         self.notify_bot_action(action)
         reward = 0
         # wait for the rest of the dt if needed to maintain framerate
         step_delay = time.time() - self.clock
+        print(f"step delay: {step_delay:.3f}s")
         if step_delay < self.dt:
             time.sleep(self.dt - step_delay)
-        else:
-            print(f"step delay: {step_delay:.3f}s")
         self.clock = time.time()
-        # this takes an average of 0.25s
-        img = pyautogui.screenshot(region=self.region)
+        img = self.sct.grab(self.reg)
+        if self.step_idx % 5 == 0:
+            done = self.find_img(np.array(img)[:, :, :-1], self.gmover, threshold=0.9) is not None
+        else:
+            done = False
+        img = Image.frombytes("RGB", img.size, img.bgra, "raw", "BGRX")
         img = img.resize((224, 224))
         # check if we were killed
         # this takes an average of 0.31s
-        done = pyautogui.locateCenterOnScreen("gamover.png", confidence=0.6) is not None
         if done:
             self.state = STATE.INIT
             # parse the score, attempt 10 times
@@ -177,14 +187,15 @@ class Agarioenv(gym.core.Env):
             for i in range(100):
                 try:
                     # random center crop
-                    crop_size = int(min(self.region[2], self.region[3]) * 0.2)
-                    region = (
-                        self.region[0] + np.random.randint(0, crop_size),
-                        self.region[1] + np.random.randint(0, crop_size),
-                        self.region[2] - crop_size, self.region[3] - crop_size
-                    )
-                    pyautogui.screenshot('tmp.png', region=region)
-                    sfood, scells = parse_score(cv2.imread('tmp.png'))
+                    crop_size = int(min(self.reg['width'], self.reg['height']) * 0.2)
+                    region = {
+                        "left": self.reg['left'] + np.random.randint(0, crop_size),
+                        'top': self.reg['top'] + np.random.randint(0, crop_size),
+                        'width': self.reg['width'] - crop_size,
+                        'height': self.reg['height'] - crop_size
+                    }
+                    cropped_img = self.sct.grab(region)
+                    sfood, scells = parse_score(np.array(cropped_img)[:,:,:-1])
                     # 0 cells eaten is often confused with 9, so assume its 0
                     if scells == 9:
                         scells = 0
@@ -193,10 +204,9 @@ class Agarioenv(gym.core.Env):
                 except Exception as e:
                     print(e)
                     continue
-                finally:
-                    os.remove('tmp.png')
             print(f"score: {sfood} food eaten, {scells} cells eaten")
             reward = sfood + scells
+        self.step_idx += 1
         return img, reward, done, None, None
 
     def main(self, bot, recorderBot):
@@ -206,13 +216,14 @@ class Agarioenv(gym.core.Env):
                 recorderBot.reset_episode()
 
             elif self.state == STATE.PLAYING:
-                action = bot(obs)
+
+                action = bot(np.array(obs)[:, :, :-1])
                 obs, rew, term, trun, _ = self.step(action)
                 if self.do_bot_play:
                     action = self.bot_action
                 else:
                     mouse_pos = self.mouse_ct.position
-                    action = np.array([mouse_pos[0] / self.width, mouse_pos[1] / self.height, self.kb_action[0]])
+                    action = np.array([mouse_pos[0] / self.reg['width'], mouse_pos[1] / self.reg['height'], self.kb_action[0]])
                 recorderBot.add_step(obs, action, reward=rew, done=term)
         recorderBot.save_episode()
 
