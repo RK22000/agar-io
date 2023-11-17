@@ -23,9 +23,14 @@ Press shift to switch from bot to manual control.
 
 - [x] Convert agario into a gym environmnet
 - [ ] Train a sb3 RL agent
-- [ ] Train offline without the need to run the game
+- [ ] Train offline
 - [ ] Use a programmatic browser interface instead of OCR
 - [x] Capture the correct window rectangle
 - [x] Speedup the screenshot capture
 - [x] Fix death detection
+- [ ] Automatic episode restart
 - [ ] Add reward on score change
+- [ ] Reliable end of game reward parsing
+- [ ] Learn by crashing implementation
+- [ ] Imitation learning baselines
+- [ ] Handle game crashes

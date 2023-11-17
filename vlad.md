@@ -1,4 +1,11 @@
-# Mon Nov 13 11:01:17 PM PST 2023
+# Fri Nov 17 04:01:22 AM PST 2023
+
+Able to parse scores more predictibly under good conditions: whent he aspect ratio allows for the biggest possible Match Results card.
+
+---
+> endlog - Fri Nov 17 04:02:48 AM PST 2023
+
+## Mon Nov 13 11:01:17 PM PST 2023
 
 New data colletion challenge: `pyautogui.screenshot` takes an average of 0.25 sec and `pyautogui.locateCenterOnScreen` takes 0.31 sec.
 
