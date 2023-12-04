@@ -2,7 +2,7 @@ import pyautogui as pyg
 import time
 import numpy as np
 import os
-import models.random_bull as model
+import models.model_experiemnt_lab as model
 import importlib
 import sys
 import utils
@@ -58,29 +58,31 @@ def one_round():
         h = n
         im = im.resize((w,h))
 
-        time.sleep(0.005)
+        time.sleep(0.0005)
 
         if pos != pyg.position(): # Player is interacting with the mouse. Let them play
             pos = pyg.position()
-            # print(f"player played to {pos}")
+            print(f"player played to {pos}")
             name = os.path.join(parent_dir, run, f"{pic:0=10}+user.png")
             pic+=1
             # continue
         else: #<<< Use model to pick next coordinates
-            pos = model.predict()
+            s = time.time()
+            pos = model.predict(im)
+            print(f"Prediction wait: {time.time()-s} seconds")
             #??? Should the code over here trigger next round of training on model
             #??? Or should the code in the model decide the appropriate time to do 
             #??? that
             #<<<
-            # print(f"System playing to {pos}")
-            pyg.moveTo(*pos, 0.3)
+            print(f"System playing to {pos}")
+            pyg.moveTo(*pos)
             name = os.path.join(parent_dir, run, f"{pic:0=10}+system.png")
             pic+=1
         x = pos[0] - screen_shape[0]/2
         y = pos[1] - screen_shape[1]/2
         angle = atan2(y,x) * 180 / np.pi
         utils.focus_dir(im, angle).save(name)
-        if pic >= 100:
+        if False and pic >= 100:
             pyg.press('esc')
 
     pyg.press('f11')
