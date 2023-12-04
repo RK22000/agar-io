@@ -1,14 +1,21 @@
-import pyautogui as pyg
+import utils
+t = utils.loading_text("Loading imports")
+t.start()
 import time
+import threading
+import pyautogui as pyg
 import numpy as np
 import os
 import models.model_experiemnt_lab as model
 import importlib
 import sys
-import utils
 from math import atan2
 import traceback
+import pandas as pd
+t.stop()
 
+logging_dir = "runs2"
+os.makedirs(logging_dir, exist_ok=True)
 
 def one_round():
     #====================================================
@@ -26,24 +33,23 @@ def one_round():
     pyg.press('f11')
     time.sleep(1)
     box = pyg.locateOnScreen('pics\\play_button.png')
+    if box is None: 
+        pyg.press('f11')
+        return False
     print(f"located play button at {box}")
     pos = (box.left+box.width/2, box.top+box.height/2)
     pyg.moveTo(*pos)
 
     #====================================================
-    # Instantiate directory to record run
+    # Instantiate the logger
     #----------------------------------------------------
-    parent_dir = "runs"
-    if not os.path.exists(parent_dir):
-        os.makedirs(parent_dir)
-    run = f"{len(os.listdir(parent_dir)):0=5}"
-    os.makedirs(os.path.join(parent_dir, run))
+    logger = utils.Logger(parent_dir=logging_dir, active=True)
 
 
     #====================================================
     # Start and play Agar IO Game
     #----------------------------------------------------
-    screen_shape = pyg.size()
+    screen_shape = np.asarray(pyg.size())
     pic = 0
     pyg.leftClick()
     time.sleep(0.5)
@@ -51,47 +57,47 @@ def one_round():
         pos = pyg.position()
 
         # Capture image
-        im = pyg.screenshot()
-        w,h = im.size
+        img = pyg.screenshot()
+        w,h = img.size
         n = 200
         w = w*n//h
         h = n
-        im = im.resize((w,h))
+        im = img.resize((w,h))
 
         time.sleep(0.0005)
 
-        if pos != pyg.position(): # Player is interacting with the mouse. Let them play
+        user_played = pos != pyg.position()
+        if user_played: # Player is interacting with the mouse. Let them play
             pos = pyg.position()
-            print(f"player played to {pos}")
-            name = os.path.join(parent_dir, run, f"{pic:0=10}+user.png")
-            pic+=1
+            # print(f"player played to {pos}")
+            # name = os.path.join(parent_dir, run, f"{pic:0=10}+user.png")
+            # pic+=1
             # continue
         else: #<<< Use model to pick next coordinates
             s = time.time()
-            pos = model.predict(im)
-            print(f"Prediction wait: {time.time()-s} seconds")
-            #??? Should the code over here trigger next round of training on model
-            #??? Or should the code in the model decide the appropriate time to do 
-            #??? that
-            #<<<
-            print(f"System playing to {pos}")
+            pos = model.predict(im) * screen_shape
+            # print(f"Prediction wait: {time.time()-s} seconds")
+            # print(f"System playing to {pos}")
             pyg.moveTo(*pos)
-            name = os.path.join(parent_dir, run, f"{pic:0=10}+system.png")
-            pic+=1
-        x = pos[0] - screen_shape[0]/2
-        y = pos[1] - screen_shape[1]/2
+            # name = os.path.join(parent_dir, run, f"{pic:0=10}+system.png")
+            # pic+=1
+        # x = pos[0] - screen_shape[0]/2
+        # y = pos[1] - screen_shape[1]/2
+        x,y = pos - screen_shape/2
         angle = atan2(y,x) * 180 / np.pi
-        utils.focus_dir(im, angle).save(name)
+        im = utils.focus_dir(im, angle)
+        logger.log_img(im, user_played,img)
         if False and pic >= 100:
             pyg.press('esc')
 
     pyg.press('f11')
-    pics = os.listdir(os.path.join(parent_dir, run))
-    pics = [os.path.join(parent_dir, run, i) for i in pics]
-    delpics = pics[-2:]
-    for p in delpics:
-        # print(f"Deleting {p}")
-        os.remove(p)
+    # pics = os.listdir(os.path.join(parent_dir, run))
+    # pics = [os.path.join(parent_dir, run, i) for i in pics]
+    # delpics = pics[-2:]
+    # for p in delpics:
+    #     # print(f"Deleting {p}")
+    #     os.remove(p)
+    # logger.trim_end(2)
     time.sleep(1)
     box=pyg.locateOnScreen("pics\\cont_button.png")
     click=True
@@ -104,20 +110,45 @@ def one_round():
         pyg.leftClick()
     return True
 
+df_name = "rounds.csv"
+if os.path.exists(df_name):
+    df = pd.read_csv(df_name, index_col=False)
+else:
+    df = pd.DataFrame(columns=['Model', 'Survival_Time', 'Reaction_Time', 'Run_Dir', 'Error'])
 
 good_rounds = []
 bad_rounds = []
-round = len(os.listdir('runs'))
+round = len(os.listdir(logging_dir))
 roundLim = round + 500
+frac_n = 5
+fracs = [i/(frac_n-1) for i in range(frac_n)]
 while round < roundLim:
-    print(f"start of round: {round}")
+    i = round%frac_n
+    model_name = f"go{int(fracs[i]*100)}-avoid{int((1-fracs[i])*100)}"
+    print(f"start of round: {round}/{model_name}")
     res = False
+    stop=False
+    def cap():
+        count = 0
+        while not stop and count < 20*60/10:
+            count+=1
+            time.sleep(10)
+        pyg.press('esc')
+    timer = threading.Thread(target=cap)
     try:
-        importlib.reload(model)
+        model.frac=fracs[i]
+        model.reset_reaction_time()
+        timer.start()
+        start_time = time.time()
         res = one_round()
+        end_time = time.time()
+        stop=True
     except Exception as e:
+        end_time = time.time()
+        stop=True
         print(f"Exception in round {round}")
         print(traceback.format_exc())
+    timer.join()
     if res:
         good_rounds.append(round)
     else:
@@ -128,7 +159,15 @@ while round < roundLim:
             n+=1
             name = f"{name[:-4]}({n}).png"
         pyg.screenshot().save(name)
-    print(f"end of round: {round}")
+        pyg.hotkey('ctrl','r')
+    print(f"end of round: {round}/{model_name}: {end_time-start_time} seconds")
+    df.loc[len(df)] = [model_name, end_time-start_time, model.react_time/model.react_count, os.path.join(logging_dir, f"{round:0=5}"), not res]
+    df.to_csv(df_name, index=False)
+    if not res:
+        # sys.exit(0)
+        # break
+        pass
     round+=1
     time.sleep(1)
 
+print("Exiting script")

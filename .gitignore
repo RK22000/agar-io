@@ -6,4 +6,7 @@ env/
 data_imitation/
 rot_pics/
 .vscode
-runs/
+runs*/
+erpics/
+*.gz
+
