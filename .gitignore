@@ -9,4 +9,5 @@ rot_pics/
 runs*/
 erpics/
 *.gz
+*.h5
 
