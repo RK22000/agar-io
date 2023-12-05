@@ -6,7 +6,7 @@ import threading
 import pyautogui as pyg
 import numpy as np
 import os
-import models.model_experiemnt_lab as model
+import models.model_student as model
 import importlib
 import sys
 from math import atan2
@@ -16,6 +16,7 @@ t.stop()
 
 logging_dir = "runs2"
 os.makedirs(logging_dir, exist_ok=True)
+one_run_mode = True
 
 def one_round():
     #====================================================
@@ -43,7 +44,7 @@ def one_round():
     #====================================================
     # Instantiate the logger
     #----------------------------------------------------
-    logger = utils.Logger(parent_dir=logging_dir, active=True)
+    logger = utils.Logger(parent_dir=logging_dir, active=not one_run_mode)
 
 
     #====================================================
@@ -122,10 +123,21 @@ round = len(os.listdir(logging_dir))
 roundLim = round + 500
 frac_n = 5
 fracs = [i/(frac_n-1) for i in range(frac_n)]
+students = [
+ 'student_models\\sum_normal_e09.keras',
+ 'student_models\\0.05_e09.keras',
+ 'student_models\\0.1_e09.keras',
+ 'student_models\\1.5_e09.keras',
+ 'student_models\\0.5_e09.keras'
+ 'student_models\\1_e09.keras',
+]
 while round < roundLim:
     i = round%frac_n
     model_name = f"go{int(fracs[i]*100)}-avoid{int((1-fracs[i])*100)}"
+    i = round%len(students)
+    model_name = students[i][15:-6]
     print(f"start of round: {round}/{model_name}")
+    model.load_student(students[i])
     res = False
     stop=False
     def cap():
@@ -136,7 +148,7 @@ while round < roundLim:
         pyg.press('esc')
     timer = threading.Thread(target=cap)
     try:
-        model.frac=fracs[i]
+        # model.frac=fracs[i]
         model.reset_reaction_time()
         timer.start()
         start_time = time.time()
@@ -160,12 +172,15 @@ while round < roundLim:
             name = f"{name[:-4]}({n}).png"
         pyg.screenshot().save(name)
         pyg.hotkey('ctrl','r')
+    stats = [model_name, end_time-start_time, model.react_time/model.react_count, os.path.join(logging_dir, f"{round:0=5}"), not res]
+    print(f"Stats: {stats}")
     print(f"end of round: {round}/{model_name}: {end_time-start_time} seconds")
-    df.loc[len(df)] = [model_name, end_time-start_time, model.react_time/model.react_count, os.path.join(logging_dir, f"{round:0=5}"), not res]
-    df.to_csv(df_name, index=False)
-    if not res:
+    if not one_run_mode:
+        df.loc[len(df)] = stats
+        df.to_csv(df_name, index=False)
+    if not res and one_run_mode:
         # sys.exit(0)
-        # break
+        break
         pass
     round+=1
     time.sleep(1)

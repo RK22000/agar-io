@@ -11,3 +11,4 @@ erpics/
 *.gz
 *.h5
 
+*.keras

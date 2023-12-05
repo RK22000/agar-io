@@ -14,6 +14,9 @@ tflite_path = "model.tflite"
 interpreter = tf.lite.Interpreter(model_path=tflite_path)
 lite_model = interpreter.get_signature_runner('serving_default')
 
+def load_student(stu):
+    pass
+
 dir_count = 6
 angles = [i*360/dir_count for i in range(6)]
 radians = [i*np.pi/180 for i in angles]
@@ -45,9 +48,8 @@ def predict(img, screen_shape=(2240,1400)):
     react_count += 1
     return res
 
-def _predict(img, screen_shape=(2240,1400)):
+def make_preds(img):
     tstart()
-    screen_shape = np.array(screen_shape)
     tstop("got shape")
     imgs = utils.focus_dirs(img, angles)
     tstop("got focus dirs")
@@ -55,6 +57,13 @@ def _predict(img, screen_shape=(2240,1400)):
     tstop("converted to np.arrays")
     preds = lite_model(conv2d_input=imgs)['dense_3']
     tstop("made predictions")
+    T=0.05
+    # preds = np.exp(preds/T)/sum(np.exp(preds/T))
+    return preds
+
+def _predict(img, screen_shape=(2240,1400)):
+    screen_shape = np.array(screen_shape)
+    preds = make_preds(img)
     # print(f"Model Preds: \n{preds}")
     direction = tf.argmax(preds)[0].numpy()
     direction = (direction+dir_count//2)%dir_count
@@ -72,7 +81,6 @@ def _predict(img, screen_shape=(2240,1400)):
     nxt = direction+1 if direction < dir_count-1 else 0
     next_dirs = [prev,direction,nxt]
     mags = [preds[i][0] for i in next_dirs]
-    mags = np.exp(mags)/sum(np.exp(mags))
     dirs = [vecs[i] for i in next_dirs]
     avoid = sum([a*b for a,b in zip(mags, dirs)])
 
@@ -80,6 +88,7 @@ def _predict(img, screen_shape=(2240,1400)):
     pos *= 0.25
     pos += 0.5
     return pos
+
 
     
     
