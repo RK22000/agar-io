@@ -6,7 +6,7 @@ import threading
 import pyautogui as pyg
 import numpy as np
 import os
-import models.model_student as model
+import models.model_experiemnt_lab as model
 import importlib
 import sys
 from math import atan2
@@ -14,7 +14,7 @@ import traceback
 import pandas as pd
 t.stop()
 
-logging_dir = "runs2"
+logging_dir = "runs3"
 os.makedirs(logging_dir, exist_ok=True)
 one_run_mode = True
 
@@ -85,9 +85,9 @@ def one_round():
         # x = pos[0] - screen_shape[0]/2
         # y = pos[1] - screen_shape[1]/2
         x,y = pos - screen_shape/2
-        angle = atan2(y,x) * 180 / np.pi
-        im = utils.focus_dir(im, angle)
-        logger.log_img(im, user_played,img)
+        # angle = atan2(y,x) * 180 / np.pi
+        # im = utils.focus_dir(im, angle)
+        # logger.log_img(im, user_played,img)
         if False and pic >= 100:
             pyg.press('esc')
 
@@ -132,24 +132,26 @@ students = [
  'student_models\\1_e09.keras',
 ]
 while round < roundLim:
+    importlib.reload(model)
     i = round%frac_n
     model_name = f"go{int(fracs[i]*100)}-avoid{int((1-fracs[i])*100)}"
     i = round%len(students)
     model_name = students[i][15:-6]
+    model_name = "bull_model"
     print(f"start of round: {round}/{model_name}")
-    model.load_student(students[i])
+    # model.load_student(students[i])
     res = False
     stop=False
     def cap():
         count = 0
-        while not stop and count < 20*60/10:
+        while not stop and count < 20*60/1:
             count+=1
-            time.sleep(10)
+            time.sleep(1)
         pyg.press('esc')
     timer = threading.Thread(target=cap)
     try:
         # model.frac=fracs[i]
-        model.reset_reaction_time()
+        # model.reset_reaction_time()
         timer.start()
         start_time = time.time()
         res = one_round()
@@ -178,6 +180,7 @@ while round < roundLim:
     if not one_run_mode:
         df.loc[len(df)] = stats
         df.to_csv(df_name, index=False)
+        pass
     if not res and one_run_mode:
         # sys.exit(0)
         break

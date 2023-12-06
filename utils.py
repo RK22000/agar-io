@@ -5,6 +5,7 @@ from PIL import Image
 import time
 import threading
 import os
+import pandas as pd
 
 def loading_text(text):
     stop_looping=[False]
@@ -108,3 +109,18 @@ class Logger:
             # print(f"Deleting {p}")
             os.remove(p)
 
+
+def pull_balanced_preds(dfr, count):
+    dfr_np = dfr.to_numpy()
+    dfr_stat = pd.DataFrame(
+        [np.argmax(dfr_np, 0), np.argmin(dfr_np, 0)],
+        columns=dfr.columns,
+        index=['argmax', 'argmin']
+    )
+    stat = dfr_stat.T 
+    argmax_vals = stat['argmax'].unique()
+    count = ceil(count/len(argmax_vals))
+    amag = stat.groupby('argmax')
+    take = [amag.get_group(i).sample(count) for i in argmax_vals]
+    take = pd.concat(take, axis=0).index
+    return dfr[take]

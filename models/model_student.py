@@ -21,9 +21,9 @@ model = keras.Sequential(layers=[
     layers.Dense(6, 'sigmoid'),
 ])
 
-if os.path.exists("student5.keras"):
+if os.path.exists("student8.keras"):
     print("loading weights")
-    model.load_weights("student5.keras")
+    model.load_weights("student11.keras")
 
 def load_student(stu_file):
     # model.load_weights(stu_file)
@@ -56,29 +56,33 @@ def _predict(img):
     img = np.asarray(img, np.float32)/255
     img = np.stack([img])
     preds = model(img)[0]
+    mags = preds
+    dirs = vecs
+    pos = -sum([a*b for a,b in zip(mags, dirs)])
 
-    direction = tf.argmax(preds).numpy()
-    direction = (direction+dir_count//2)%dir_count
-    # print(f"Pred max: {direction}: {preds[direction]}")
-    prev = direction-1 if direction > 0 else dir_count-1
-    nxt = direction+1 if direction < dir_count-1 else 0
-    next_dirs = [prev,direction,nxt]
-    mags = [1-preds[i] for i in next_dirs]
-    dirs = [vecs[i] for i in next_dirs]
-    go = sum([a*b for a,b in zip(mags, dirs)])/3
 
-    direction = tf.argmax(preds).numpy()
-    # print(f"Pred min: {direction}: {preds[direction]}")
-    prev = direction-1 if direction > 0 else dir_count-1
-    nxt = direction+1 if direction < dir_count-1 else 0
-    next_dirs = [prev,direction,nxt]
-    mags = [preds[i] for i in next_dirs]
-    # mags = np.exp(mags)/sum(np.exp(mags))
-    dirs = [vecs[i] for i in next_dirs]
-    avoid = sum([a*b for a,b in zip(mags, dirs)])
+    # direction = tf.argmax(preds).numpy()
+    # direction = (direction+dir_count//2)%dir_count
+    # # print(f"Pred max: {direction}: {preds[direction]}")
+    # prev = direction-1 if direction > 0 else dir_count-1
+    # nxt = direction+1 if direction < dir_count-1 else 0
+    # next_dirs = [prev,direction,nxt]
+    # mags = [1-preds[i] for i in next_dirs]
+    # dirs = [vecs[i] for i in next_dirs]
+    # go = sum([a*b for a,b in zip(mags, dirs)])/3
 
-    frac=0
-    pos = (frac*go-(1-frac)*avoid)
-    pos *= 0.25
+    # direction = tf.argmax(preds).numpy()
+    # # print(f"Pred min: {direction}: {preds[direction]}")
+    # prev = direction-1 if direction > 0 else dir_count-1
+    # nxt = direction+1 if direction < dir_count-1 else 0
+    # next_dirs = [prev,direction,nxt]
+    # mags = [preds[i] for i in next_dirs]
+    # # mags = np.exp(mags)/sum(np.exp(mags))
+    # dirs = [vecs[i] for i in next_dirs]
+    # avoid = sum([a*b for a,b in zip(mags, dirs)])
+
+    # frac=0
+    # pos = (frac*go-(1-frac)*avoid)
+    pos *= 3
     pos += 0.5
     return pos

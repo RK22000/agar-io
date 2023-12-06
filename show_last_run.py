@@ -10,6 +10,7 @@ parser.add_argument('-r', type=int)
 parser.add_argument('-a', action='store_true')
 parser.add_argument('-d', default='runs')
 parser.add_argument('--pov', action='store_true')
+parser.add_argument('-o')
 args = parser.parse_args()
 
 plt.axis('off')
@@ -34,18 +35,22 @@ def draw(i):
     a = Image.open(a)
     b = Image.open(b)
     im = Image.blend(a,b,frac)
-    if args.pov:
-        im = im.transpose(Image.ROTATE_90)
+    # if args.pov:
+    #     im = im.transpose(Image.ROTATE_90)
     return [plt.imshow(im)]
 
+from tqdm import tqdm
 anime = anim.FuncAnimation(
     plt.gcf(),
     draw,
-    pics,
+    tqdm(pics),
     blit=True,
-    interval=1,
+    interval=200,
     repeat_delay=400
 )
 
-plt.gcf().canvas.manager.full_screen_toggle()
-plt.show()
+if args.o is None:
+    plt.gcf().canvas.manager.full_screen_toggle()
+    plt.show()
+else:
+    anime.save(args.o)

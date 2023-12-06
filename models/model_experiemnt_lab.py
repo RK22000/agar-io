@@ -48,6 +48,17 @@ def predict(img, screen_shape=(2240,1400)):
     react_count += 1
     return res
 
+def many_preds(imgs):
+    '''predict on a list of images'''
+    start_img_len = len(imgs)
+    imgss = [utils.focus_dirs(im, angles) for im in imgs]
+    imgss = [np.asarray(imgs, np.float32) for imgs in imgss]
+    imgs = np.concatenate(imgss)/255
+    preds = lite_model(conv2d_input=imgs)['dense_3']
+    preds = np.reshape(preds, (start_img_len, 6, 2))
+    return preds
+
+
 def make_preds(img):
     tstart()
     tstop("got shape")
@@ -64,13 +75,20 @@ def make_preds(img):
 def _predict(img, screen_shape=(2240,1400)):
     screen_shape = np.array(screen_shape)
     preds = make_preds(img)
-    # print(f"Model Preds: \n{preds}")
+    
+
+    # mags = preds
+    # dirs = vecs
+    # pos = -sum([a*b for a,b in zip(mags, dirs)])
+
+
+    # # print(f"Model Preds: \n{preds}")
     direction = tf.argmax(preds)[0].numpy()
     direction = (direction+dir_count//2)%dir_count
     # print(f"Pred max: {direction}: {preds[direction]}")
     prev = direction-1 if direction > 0 else dir_count-1
     nxt = direction+1 if direction < dir_count-1 else 0
-    next_dirs = [prev,direction,nxt]
+    next_dirs = [prev,nxt]
     mags = [preds[i][1] for i in next_dirs]
     dirs = [vecs[i] for i in next_dirs]
     go = sum([a*b for a,b in zip(mags, dirs)])/3
@@ -83,9 +101,10 @@ def _predict(img, screen_shape=(2240,1400)):
     mags = [preds[i][0] for i in next_dirs]
     dirs = [vecs[i] for i in next_dirs]
     avoid = sum([a*b for a,b in zip(mags, dirs)])
-
+    # pos = -avoid
+    frac = 0.5
     pos = (frac*go-(1-frac)*avoid)
-    pos *= 0.25
+    pos *= 0.1
     pos += 0.5
     return pos
 
