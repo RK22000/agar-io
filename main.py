@@ -6,7 +6,7 @@ import threading
 import pyautogui as pyg
 import numpy as np
 import os
-import models.model_experiemnt_lab as model
+import models.model_strat2 as model
 import importlib
 import sys
 from math import atan2
@@ -87,7 +87,7 @@ def one_round():
         x,y = pos - screen_shape/2
         # angle = atan2(y,x) * 180 / np.pi
         # im = utils.focus_dir(im, angle)
-        # logger.log_img(im, user_played,img)
+        logger.log_img(im, user_played,img)
         if False and pic >= 100:
             pyg.press('esc')
 
@@ -134,10 +134,10 @@ students = [
 while round < roundLim:
     importlib.reload(model)
     i = round%frac_n
-    model_name = f"go{int(fracs[i]*100)}-avoid{int((1-fracs[i])*100)}"
-    i = round%len(students)
-    model_name = students[i][15:-6]
-    model_name = "bull_model"
+    model_name = f"student_go{int(fracs[i]*100)}-avoid{int((1-fracs[i])*100)}"
+    # i = round%len(students)
+    # model_name = students[i][15:-6]
+    # model_name = "bull_model"
     print(f"start of round: {round}/{model_name}")
     # model.load_student(students[i])
     res = False
@@ -150,8 +150,8 @@ while round < roundLim:
         pyg.press('esc')
     timer = threading.Thread(target=cap)
     try:
-        # model.frac=fracs[i]
-        # model.reset_reaction_time()
+        model.frac=fracs[i]
+        model.reset_reaction_time()
         timer.start()
         start_time = time.time()
         res = one_round()

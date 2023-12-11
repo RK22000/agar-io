@@ -10,5 +10,6 @@ runs*/
 erpics/
 *.gz
 *.h5
-
+*.mp4
+*.gif
 *.keras
