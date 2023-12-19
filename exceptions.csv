@@ -1,0 +1,8 @@
+exception,model,round,screenshot
+Could not find continue button nor play button,random_bull,130,exception_pics\exception-00000.png
+Could not find continue button nor play button,random_bull,134,exception_pics\exception-00001.png
+Could not find continue button nor play button,random_bull,135,exception_pics\exception-00002.png
+Could not find play button,random_bull,595,exception_pics\exception-00003.png
+Did not start the round,tflite-ensemble,0,exception_pics\exception-00004.png
+Did not start the round,tflite-ensemble,4,exception_pics\exception-00005.png
+Did not start the round,tflite-ensemble,5,exception_pics\exception-00006.png

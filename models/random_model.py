@@ -1,10 +1,7 @@
-# import tensorflow as tf
-# from tensorflow import keras
-# from keras import layers
-# import os
-# import matplotlib.pyplot as plt
-# from math import ceil
 import numpy as np
 
+name="random-model"
 def predict(img: np.ndarray):
-    return (((np.random.random_sample(2)*0.8)+0.1) * img.shape[:2])[[1,0]]
+    pos = np.random.random(2)
+    pos = pos/np.linalg.norm(pos)
+    return pos

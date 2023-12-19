@@ -8,9 +8,10 @@ import numpy as np
 parser = argparse.ArgumentParser()
 parser.add_argument('-r', type=int)
 parser.add_argument('-a', action='store_true')
-parser.add_argument('-d', default='runs')
+parser.add_argument('-d', default='runs4')
 parser.add_argument('--pov', action='store_true')
 parser.add_argument('-o')
+parser.add_argument('--rev', action='store_true')
 args = parser.parse_args()
 
 plt.axis('off')
@@ -21,15 +22,21 @@ elif args.r is not None:
     pars[-1] = f"{args.r:0=5}"
 par = os.path.join(args.d,pars[-1])
 plt.title(pars[-1])
+print(f"Showing run: {pars[-1]}")
 pics = os.listdir(par)
-if '.fullpic' in pics and not args.pov:
-    par = os.path.join(par, '.fullpic')
+# if '.fullpic' in pics and not args.pov:
+#     par = os.path.join(par, '.fullpic')
+#     pics = os.listdir(par)
+if args.pov:
+    par = os.path.join(par, 'pov-cropped')
     pics = os.listdir(par)
-pics = list(filter(lambda i: i[0]!='.', pics))
+pics = list(filter(lambda i: i[-4:]=='.png', pics))
 pics = [os.path.join(par,i) for i in pics]
 pics = zip(pics[:-1], pics[1:])
 interpolations = [0,0.5,1]
 pics = sum([[(p,i) for i in interpolations] for p in pics], [])
+if args.rev:
+    pics = list(reversed(pics))
 def draw(i):
     (a, b), frac = i
     a = Image.open(a)
@@ -45,7 +52,7 @@ anime = anim.FuncAnimation(
     draw,
     tqdm(pics),
     blit=True,
-    interval=200,
+    interval=100,
     repeat_delay=400
 )
 
