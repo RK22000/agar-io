@@ -14,3 +14,4 @@ erpics/
 *.gif
 *.keras
 exception_pics/
+*.tar
