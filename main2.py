@@ -5,6 +5,7 @@ import threading
 from PIL import Image
 import numpy as np
 import importlib
+pag.useImageNotFoundException(False)
 
 def prep_for_round():
     #====================================================
