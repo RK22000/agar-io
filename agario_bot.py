@@ -104,7 +104,7 @@ class Agarioenv(gym.core.Env):
                 self.bot_action[2] = 1.0
             if key == keyboard.Key.shift_l:
                 self.toggle_bot_play()
-            if key == keyboard.Key.f1:
+            if key == keyboard.Key.tab:
                 self.kill()
         self.listener = keyboard.Listener(on_press=on_press, )
         self.listener.start()
@@ -198,7 +198,8 @@ class Agarioenv(gym.core.Env):
         reward = 0
         # wait for the rest of the dt if needed to maintain framerate
         step_delay = time.time() - self.clock
-        print(f"step delay: {step_delay:.3f}s")
+        # print(f"step delay: {step_delay:.3f}s")
+        print(f"ep step {self.step_idx} ({step_delay:.3f}s)")
         if step_delay < self.dt:
             time.sleep(self.dt - step_delay)
         self.clock = time.time()
@@ -231,7 +232,7 @@ class Agarioenv(gym.core.Env):
                     sfood, scells = parse_score(np.array(cropped_img)[:, :, :-1])
                     break
                 except Exception as e:
-                    print(e)
+                    print("score parsing failed, retrying")
             print(f"score: {sfood} food eaten, {scells} cells eaten")
             reward = sfood + scells
         self.step_idx += 1
@@ -258,9 +259,9 @@ class Agarioenv(gym.core.Env):
 if __name__=='__main__':
     os.environ['TESSDATA_PREFIX'] = os.curdir
     game = Agarioenv(dt=1/30)
-    bot = RandomSyncBot()
-    # bot = PPO('CnnPolicy', game, verbose=1, device='cuda')
-    # m = bot.learn(1000)
-    # m.save('ppo_agario')
-    ds = DatasetMaker()
-    game.main(bot, ds)
+    # bot = RandomSyncBot()
+    bot = PPO('CnnPolicy', game, verbose=1, device='cuda')
+    m = bot.learn(10000)
+    m.save('ppo_agario')
+    # ds = DatasetMaker()
+    # game.main(bot, ds)
